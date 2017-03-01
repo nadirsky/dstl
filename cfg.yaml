@@ -1,0 +1,133 @@
+# you can also access
+#ctx.job.properties['property1'] = 'new-value'
+#ctx.job.tags += ['tag1', 'tag2', 'tag3']
+# Print the job's ID.
+#print ctx.job.id
+# Print the job's dump directory path.
+#print ctx.dump_dir_url
+
+
+name: Small Vehicles Satellites
+description: Unet recognizes vehicles.
+project: Satellites
+tags: [satellites]
+
+parameters:
+  - name: requirements
+    type: string
+    required: false
+    default: "pascal,tf11"
+    description: "Execution requirements"
+
+  - name: batch_size
+    type: int
+    required: false
+    default: 128
+    description: "Batch size"
+
+  - name: nb_classes
+    type: int
+    required: false
+    default: 10
+    description: "Number of classes"
+
+  - name: nb_epoch
+    type: int
+    required: false
+    default: 100
+    description: "Number of epochs"
+
+# Dropout
+  - name: dropout_conv
+    type: double
+    required: false
+    default: 0.25
+    description: "Dropout of convolutional layer"
+
+  - name: dropout_f
+    type: double
+    required: false
+    default: 0.5
+    description: "Dropout of fully connected layer"
+
+# SGD
+  - name: lr
+    type: double
+    required: false
+    default: 0.01
+    description: "Learning rate"
+
+  - name: decay
+    type: double
+    required: false
+    default: 1.e-6
+    description: "Decay of learning rate"
+
+# Augmentations
+  - name: data_augmentation
+    type: boolean
+    required: false
+    default: True
+    description: "Augmenting data like averaging, whitening, rotating... "
+
+  - name: zca_whitening
+    type: boolean
+    required: false
+    default: False
+    description: "Apply ZCA whitening"
+
+  - name: featurewise_center
+    type: boolean
+    required: false
+    default: False
+    description: "Set input mean to 0 over the dataset"
+
+  - name: samplewise_center
+    type: boolean
+    required: false
+    default: False
+    description: "Set each sample mean to 0"
+
+  - name: featurewise_std_norm
+    type: boolean
+    required: false
+    default: False
+    description: "Divide inputs by std of the dataset"
+
+  - name: samplewise_std_norm
+    type: boolean
+    required: false
+    default: False
+    description: "Divide each input by its std"
+
+  - name: rotation_range
+    type: int
+    required: false
+    default: 0
+    description: "Randomly rotate images in the range (degrees, 0 to 180)"
+
+  - name: width_shift
+    type: double
+    required: false
+    default: 0.1
+    description: "Randomly shift images horizontally (fraction of total width)"
+
+  - name: height_shift
+    type: double
+    required: false
+    default: 0.1
+    description: "Randomly shift images vertically (fraction of total height)"
+
+  - name: horizontal_flip
+    type: boolean
+    required: false
+    default: True
+    description: "Randomly flip images horizontally"
+
+  - name: vertical_flip
+    type: boolean
+    required: false
+    default: False
+    description: "Randomly flip images vertically"
+
+
