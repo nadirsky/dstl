@@ -140,13 +140,62 @@ def expand_crop(image_crop):
     return crop
 
 
+def read_masks(path):
+    masks = dict()
+    hf = h5py.File(path)
+    for ImageId in sorted(hf.keys()):
+        masks[ImageId] = hf[ImageId].value
+    hf.close()
+    return masks
+
+
+def read_hdf5(path):
+    hf = h5py.File(path, 'r')
+    def read(hf):
+        if type(hf) == h5py.Dataset: return hf.value
+        d = {}
+        for key, value in hf.iteritems():
+            d[key] = read(value)
+        return d
+    d = read(hf)
+    hf.close()
+    return d
+
+def read_buildings():
+    pred = dict()
+    PROBA_PATH_1024 = '/mnt/ml-team/satellites/an/src-1-stage1/predictions/testprobaclassid1scale1024wclass3ret3BEST.h5'
+    PROBA_PATH_2048 = '/mnt/ml-team/satellites/an/src-1-stage2/predictions/testprobaclassid1scale2048wclass3ret3BEST.h5'
+    PROBA1024 = read_hdf5(PROBA_PATH_1024)
+    PROBA2048 = read_hdf5(PROBA_PATH_2048)
+    for ImageId in sorted(PROBA1024.keys()):
+        proba1 = PROBA1024[ImageId].astype(np.uint16)
+        proba2 = PROBA2048[ImageId].astype(np.uint16)
+        pred[ImageId] = ((proba1 + proba2) >= 330).astype(np.uint8)
+    return pred
+
+def read_roads():
+    pred = dict()
+    ROADS = read_hdf5('/mnt/ml-team/satellites/an/src-3-stage1/predictions/testclassid3scale1024wclass3retBEST.h5')
+    for ImageId in sorted(ROADS.keys()):
+        pred[ImageId] = ROADS[ImageId].astype(np.uint8)
+    return pred
+
+
+BUILDINGS = read_buildings()
+ROADS = read_roads()
+
+print len(BUILDINGS)
+print len(ROADS)
+
 def generate_mask():
     model = get_unet(20, crop_width, crop_height)
     print("get_unet")
 
-    path = "/mnt/ml-team/satellites/max.sokolowski/satellites/maksymilian.sokolowski@codilime.com/miscSatellites/201702270812/0/jobs/945f9bcc-f0e2-4e8d-82e0-5ccaf1ec8c3b/src/model_3.h5"
+    path = "/mnt/ml-team/satellites/max.sokolowski/satellites/maksymilian.sokolowski@codilime.com/smallVehiclesSatellites/201703021209/0/jobs/6e105506-17fb-4d0b-9f2d-e5e2b1438dea/src/model_max_val_jaccard.h5"
     model.load_weights(path, by_name=False)
     print("model loaded")
+
+    MASK_WATER = read_masks("/mnt/ml-team/satellites/an/src-78-stage1/water-stage1-test-predictions.h5")
 
 
 
@@ -164,6 +213,9 @@ def generate_mask():
         image_height = image.shape[1]
 
         mask = np.zeros((image_width, image_height))
+
+        buildings = read_buildings()
+        roads = read_roads()
 
         for i in xrange(0, image_width, crop_width-2*border):
             x = min(i, image_width - crop_width - 1)
@@ -196,14 +248,50 @@ def generate_mask():
         # train_image_channel.send(x=-1, y=neptune_image)
         # print("Mask: ", np.count_nonzero(mask))
         # mask = (np.rint(mask-0.2)).astype('uint8')
+
+        mask_water = MASK_WATER[key]
+        mask = mask - mask_water
+        mask = mask.clip(min=0)
+        (width, height) = mask.shape
+
+        extension_size = 100
+        threshold = 0.5
+        buildings_mask = buildings[key]
+        extended_building_mask = np.ones((height + 2*extension_size, width + 2*extension_size))
+
+        for x in xrange(height):
+            for y in xrange(width):
+                if buildings_mask[y, x] > threshold:
+                    extended_building_mask[y:y+2*extension_size, x:x+2*extension_size] = 0
+
+        extended_building_mask = extended_building_mask[extension_size:width+extension_size, extension_size:height+extension_size]
+        mask = mask - extended_building_mask
+        mask = mask.clip(min=0)
+
+        # extension_size = 2
+        # threshold = 0.5
+        # road_mask = roads[key]
+        # extended_road_mask = np.ones((height + 2 * extension_size, width + 2 * extension_size))
+        #
+        # for x in xrange(height):
+        #     for y in xrange(width):
+        #         if road_mask[y, x] > threshold:
+        #             extended_road_mask[y:y + 2 * extension_size, x:x + 2 * extension_size] = 0
+        #
+        # extended_road_mask = extended_road_mask[extension_size:width + extension_size,
+        #                          extension_size:height + extension_size]
+        # mask = mask - extended_road_mask
+        # mask = mask.clip(min=0)
+
         mask = (mask*255).astype('uint8')
         print("Mask int: ", np.count_nonzero(mask))
 
         f.create_dataset(key, data=mask)
 
         counter += 1
-        # if counter > 5:
+        # if counter > 3:
         #     break
+
 
     # import multipolygons
     # import converters

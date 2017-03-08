@@ -17,14 +17,14 @@ from deepsense import neptune
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 from PIL import Image
 
-# from data_unet import train_generator, val_generator
-from data_unet_small import train_generator, val_generator
+from data_unet import train_generator, val_generator
+# from data_unet_small import train_generator, val_generator
 
 
 seed = 1
 s = 128
 channels = 20
-batch = 8
+batch = 16
 
 prefix = "/mnt/ml-team/satellites/max.sokolowski/data/"
 
@@ -182,7 +182,7 @@ def jaccard_coef_int(y_true, y_pred):
 
 
 def binary_crossentropy_weight(target, output):
-    class1 = 400
+    class1 = 300
     class2 = 1
     smooth = 1e-12
 
@@ -331,7 +331,7 @@ def get_unet3(n_ch, patch_height, patch_width):
 
 model = get_unet(channels, s, s)
 
-path = "/mnt/ml-team/satellites/max.sokolowski/satellites/maksymilian.sokolowski@codilime.com/smallVehiclesSatellites/201703011135/0/jobs/5c4820f8-bf0a-47ee-bff2-8b30bff83380/src/model_2.h5"
+path = "/mnt/ml-team/satellites/max.sokolowski/satellites/maksymilian.sokolowski@codilime.com/miscSatellites/201702270812/0/jobs/945f9bcc-f0e2-4e8d-82e0-5ccaf1ec8c3b/src/model_6.h5"
 model.load_weights(path, by_name=True)
 # model = load_model(path)
 
